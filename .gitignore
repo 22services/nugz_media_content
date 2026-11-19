@@ -1,0 +1,10 @@
+# Large media never goes in git (originals live in GitHub Releases)
+original/*
+!original/README.md
+exports/*
+!exports/README.md
+*.MOV
+*.mov
+*.mp4
+*.wav
+*.part

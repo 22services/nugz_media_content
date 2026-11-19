@@ -1,0 +1,34 @@
+[ 25.39- 27.35] Si je disais que en Europe, vous pouvez
+[ 36.47- 42.93] préparer un traide avec même pas dix euros de risks prévues et ne pouvez pas rentrer dedans.
+[ 52.34- 53.40] Si je disais que en Europe, vous pouvez
+[ 55.44- 59.62] préparer un traide avec
+[ 64.36- 70.76] même pas dix euros de risks et ne pouvez pas rentrer dedans.
+[ 73.34- 78.30] Et si je te disais qu'en Europe tu peux préparer un trade avec même pas 10€ de risque, on n'est pas pouvoir ouvrir.
+[ 80.33- 84.69] Et si je te disais qu'en Europe tu peux préparer un trade avec même pas 10€ de risque, on n'est pas pouvoir l'ouvrir.
+[104.30-105.46] Les brokers CFD
+[112.05-114.23] en Europe
+[122.74-127.88] sont
+[133.42-136.28] limités à x30 de levier.
+[137.12-139.18] Certains brokers peuvent même monter à 400,
+[141.80-143.18] les
+[151.14-156.68] brokers CFD régulés en Europe sont limités à 30 de levier et
+[164.43-171.91] brokers CFD régulés en Europe sont limités à 30 des faits de levier. Or, de ce cadre, certains brokers sont limités à 400.
+[172.79-180.29] La différence entre ces deux choses là, la marge et cette marge là qui peut empêcher à un trésor particulier de rentrer sur une position.
+[290.58-295.82] Imagine, tu as 500€ sur ton compte broker, tu veux ouvrir une position.
+[297.62-298.14] Maintenant,
+[331.93-332.55] imagine,
+[333.45-337.83] tu as 500€, tu veux ouvrir une position sur le euro USD avec un lot 0,20.
+[346.04-354.78] Imagine, tu as 500€ sur ton compte, tu veux ouvrir une position sur le euro USD avec un lot 0,20, ce qui fait donc une position de 20,000€.
+[355.74-360.10] tu es donc limité à avoir une perte maximale de 167 euros.
+[366.20-369.18] Imagine, tu as 500 euros sur un compte.
+[374.14-375.80] Imagine, tu as 500 euros sur ton compte.
+[376.74-382.42] Tu veux ouvrir une position sur leur usd avec 0,20, ce qui fait donc 20 000 euros.
+[396.97-397.99] Exemple d'acca concret.
+[399.09-404.53] Tu as 500 euros sur ton compte, tu veux ouvrir une position sur leur usd avec un lot de 0,20,
+[406.24-408.38] ce qui fait environ 20 000 euros.
+[415.41-416.43] Exemple d'un cas concret.
+[417.41-427.91] Tu as ton compte avec 500€ dessus. Tu veux ouvrir une position sur l'horreur USD avec un lot de 0,20. Ce qui fait 20 000€ d'exposition.
+[430.01-430.87] Avec un compte.
+[436.10-441.60] Exemple concret. Tu as 500€ sur ton compte. Tu ouvres une position sur l'horreur USD avec un lot de 0,20.
+[442.42-443.68] en risquant dix euros.
+[450.24-478.50] Exemple concret, tu as 500 euros sur ton compte, tu veux ouvrir une position avec un autre 0,20, ce qui fait 20 000 euros. Tu en risques dix, si tu as seulement un effet de levier de x 30, alors là la marge nécessaire sera de 667 euros. Si là par contre tu as un effet de levier de x 400, alors là d'un coup la marge nécessaire n'est seulement que de 50€. Est-ce que tu comprends le problème avec la marge sur les brokers CFD ?
