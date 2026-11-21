@@ -25,6 +25,11 @@ Set by the team on 2026-11-20 (script "Levier ESMA ×30 vs ×400"):
   https://www.tiktok.com/@ben_films/video/7322520525169872161 (Montserrat, Avenir Next,
   Barlow, The Bold Font, Fava Black, Made Soulmaze, Rubik, Minion Pro).
 
+- **Sound** (team feedback 2026-11-21: synthesized sounds "look cheap"): only real
+  recorded SFX (Mixkit, see `analysis/audio_credits.md`), peak-aligned on the cuts; no
+  game-show buzzers. Music: dark trap / dark tech beat around 90–100 BPM, the trading-reel
+  sound of the references, entering after the hook, ducked ~15 dB under the voice.
+
 ## Video generation
 
 HeliosGen (repo `22services/22creations`, `bin/helios`) and its rules apply: budget rule
