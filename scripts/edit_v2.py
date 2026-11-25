@@ -28,9 +28,10 @@ SRC = os.path.join(ROOT, "original/video_01_brut_nugz.MOV")
 WORDS = os.path.join(ROOT, "analysis/transcript_words.json")
 OUTDIR = os.path.join(ROOT, "exports/v2"); os.makedirs(OUTDIR, exist_ok=True)
 OUT = os.path.join(OUTDIR, "nugz_levier_x30_x400_v2.mp4")
-if os.environ.get("ANIM_STYLE") == "hologram":
-    OUTDIR = os.path.join(ROOT, "exports/v4_hologram"); os.makedirs(OUTDIR, exist_ok=True)
-    OUT = os.path.join(OUTDIR, "picture_hologram.mp4")
+if os.environ.get("ANIM_STYLE") in ("hologram", "arcade"):
+    _st = os.environ["ANIM_STYLE"]
+    OUTDIR = os.path.join(ROOT, f"exports/v4_{_st}"); os.makedirs(OUTDIR, exist_ok=True)
+    OUT = os.path.join(OUTDIR, f"picture_{_st}.mp4")
 TMP, ESMA_IMG, LEV_IMG = sys.argv[1], sys.argv[2], sys.argv[3]
 FONTS = os.environ.get("NUGZ_FONTS", os.path.join(ROOT, "assets/fonts"))
 os.makedirs(TMP, exist_ok=True)
@@ -448,6 +449,84 @@ def scene_anim_holo(T):
     a = np.asarray(img.convert("RGB"), np.float32); a[::3] *= 0.94
     return Image.fromarray(a.astype(np.uint8))
 
+# --- Part 2, style "Arcade" (ref: iv2fi reel made with hum.studio) ---
+# Real 3D shots (HeliosGen: nano-banana-pro keyframes -> kling-3.0) of an original mascot in
+# neon glass arcade cases; numbers overlaid in an arcade pixel font with CRT glow.
+ARCADE_DIR = os.environ.get("ARCADE_DIR", "")
+F_PIX = "PressStart2P-Regular.ttf"
+class ClipReader:
+    """Sequential frame reader for one 3D shot, scaled/cropped to 1080x1920."""
+    def __init__(self, path):
+        self.path, self.pr, self.idx, self.last = path, None, -1, None
+    def frame(self, i):
+        if self.pr is None or i < self.idx:
+            if self.pr: self.pr.kill()
+            self.pr = subprocess.Popen(["ffmpeg", "-v", "error", "-i", self.path, "-vf",
+                f"fps={FPS},scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}",
+                "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
+            self.idx = -1
+        while self.idx < i:
+            buf = self.pr.stdout.read(W * H * 3)
+            if len(buf) < W * H * 3: break                         # clip shorter: hold last frame
+            self.last = Image.frombuffer("RGB", (W, H), buf).copy(); self.idx += 1
+        return self.last.copy()
+_clips = {}
+def clip(name):
+    if name not in _clips: _clips[name] = ClipReader(os.path.join(ARCADE_DIR, name + ".mp4"))
+    return _clips[name]
+
+def pix_text(lay, xy, s, size, col, anchor="mm", alpha=255):
+    d = ImageDraw.Draw(lay); f = font(F_PIX, size)
+    x, y = xy
+    d.text((x + 3, y + 3), s, font=f, fill=(0, 0, 0, int(alpha * .7)), anchor=anchor)   # hard pixel shadow
+    d.text((x, y), s, font=f, fill=col + (alpha,), anchor=anchor)
+
+def scene_anim_arcade(T):
+    M = anim_marks
+    if T < M[2]:   base = clip("s1").frame(int(T * FPS))
+    elif T < M[5]: base = clip("s2").frame(int((T - M[2]) * FPS))
+    elif T < M[7]: base = clip("s3").frame(int((T - M[5]) * FPS))
+    else:          base = clip("s4").frame(int((T - M[7]) * FPS))
+    img = base.convert("RGBA")
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    blink = (T * 2.5) % 1 < 0.62
+    # HUD line, arcade style
+    pix_text(lay, (70, 150), "1UP", 34, (255, 70, 70), anchor="lm")
+    pix_text(lay, (W // 2, 150), "EXEMPLE CONCRET", 34, WHITE)
+    if T >= M[1]:
+        bal = int(round(500 * ease((T - M[1]) / 0.9)))
+        pix_text(lay, (W - 70, 150), "COMPTE", 26, H_CYAN, anchor="rm")
+        pix_text(lay, (W - 70, 200), f"{bal} €", 34, DA, anchor="rm")
+    def big(s, col, t0, y=430, size=92, sub=None, subcol=WHITE):
+        if T < t0: return
+        sc = back_out((T - t0) / 0.25, 2.0)
+        pix_text(lay, (W // 2, y), s, max(1, int(size * max(sc, .05))), col)
+        if sub: pix_text(lay, (W // 2, y + size * 0.95), sub, 34, subcol)
+    if T < M[2]:
+        if T >= M[1]: big("500 €", DA, M[1], sub="SUR TON COMPTE")
+        else: big("INSERT COIN", WHITE, 0.05, size=60) if blink else None
+    elif T < M[5]:
+        if T < M[3]: big("LOT 0,20", DA, M[2], size=86, sub="EUR/USD")
+        else: big("20 000 €", WHITE, M[3], sub="D'EXPOSITION")
+        if T >= M[4]: big("STOP -10 €", (255, 80, 80), M[4], y=640, size=52)
+    elif T < M[7]:
+        big("LEVIER x30", H_CYAN, M[5], y=300, size=60)
+        if T >= M[6]:
+            big("MARGE 667 €", WHITE, M[6], y=460, size=74)
+            if T >= M[6] + 0.9 and blink:
+                pix_text(lay, (W // 2, 620), "TRADE IMPOSSIBLE", 54, (255, 70, 70))
+                pix_text(lay, (W // 2, 700), "CRÉDIT INSUFFISANT", 30, WHITE)
+    else:
+        big("LEVIER x400", H_CYAN, M[7], y=300, size=60)
+        if T >= M[8]:
+            big("MARGE 50 €", WHITE, M[8], y=460, size=74)
+            if T >= M[8] + 0.9:
+                pix_text(lay, (W // 2, 620), "TRADE OUVERT", 64, (90, 240, 140))
+                if blink: pix_text(lay, (W // 2, 700), "PLAYER 1 READY", 30, WHITE)
+    img.alpha_composite(glow(lay, 12, 1.1))
+    a = np.asarray(img.convert("RGB"), np.float32); a[::3] *= 0.93          # CRT scanlines
+    return Image.fromarray(a.astype(np.uint8))
+
 # ------------------------------------------------------------------ captions (@planfomo style)
 words = [w for s in json.load(open(WORDS)) for w in s["words"]]
 CAPS = []   # (t_start, t_end, token, is_emphasis)
@@ -482,7 +561,7 @@ def draw_caption(img, tnow, kind):
     return img
 
 if os.environ.get("PREVIEW_T"):                       # quick stills of the animation, no render
-    fn = scene_anim_holo if ANIM_STYLE == "hologram" else scene_anim
+    fn = {"hologram": scene_anim_holo, "arcade": scene_anim_arcade}.get(ANIM_STYLE, scene_anim)
     for tt in [float(x) for x in os.environ["PREVIEW_T"].split(",")]:
         kind = next(p["kind"] for p in pieces if p["t0"] <= tt < p["t0"] + p["dur"])
         draw_caption(fn(tt - anim_t0), tt, kind).save(os.path.join(TMP, f"preview_{tt:05.2f}.jpg"), quality=90)
@@ -527,7 +606,7 @@ for p in pieces_to_render:
     elif kind == "lev":   gen = (scene_lev(k / FPS, p["dur"]) for k in range(p["n"]))
     elif kind == "marge": gen = (scene_marge(k / FPS, p["dur"]) for k in range(p["n"]))
     else:
-        fn = scene_anim_holo if ANIM_STYLE == "hologram" else scene_anim
+        fn = {"hologram": scene_anim_holo, "arcade": scene_anim_arcade}.get(ANIM_STYLE, scene_anim)
         gen = (fn(p["t0"] - anim_t0 + k / FPS) for k in range(p["n"]))
     for k, fr in enumerate(gen):
         tnow = p["t0"] + k / FPS
