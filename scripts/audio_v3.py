@@ -16,10 +16,10 @@ import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "original/video_01_brut_nugz.MOV")
-V2 = os.path.join(ROOT, "exports/v2/nugz_levier_x30_x400_v2.mp4")
+V2 = os.environ.get("PICTURE", os.path.join(ROOT, "exports/v2/nugz_levier_x30_x400_v2.mp4"))   # any style's picture
 CUT = json.load(open(os.path.join(ROOT, "exports/v2/cutlist_v2.json")))
 OUTDIR = os.path.join(ROOT, "exports/v3"); os.makedirs(OUTDIR, exist_ok=True)
-OUT = os.path.join(OUTDIR, "nugz_levier_x30_x400_v3.mp4")
+OUT = os.environ.get("OUT", os.path.join(OUTDIR, "nugz_levier_x30_x400_v3.mp4"))
 TMP, SFXDIR, MUSIC = sys.argv[1], sys.argv[2], sys.argv[3]
 os.makedirs(TMP, exist_ok=True)
 SR = 48000

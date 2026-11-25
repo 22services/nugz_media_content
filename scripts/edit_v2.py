@@ -28,6 +28,9 @@ SRC = os.path.join(ROOT, "original/video_01_brut_nugz.MOV")
 WORDS = os.path.join(ROOT, "analysis/transcript_words.json")
 OUTDIR = os.path.join(ROOT, "exports/v2"); os.makedirs(OUTDIR, exist_ok=True)
 OUT = os.path.join(OUTDIR, "nugz_levier_x30_x400_v2.mp4")
+if os.environ.get("ANIM_STYLE") == "hologram":
+    OUTDIR = os.path.join(ROOT, "exports/v4_hologram"); os.makedirs(OUTDIR, exist_ok=True)
+    OUT = os.path.join(OUTDIR, "picture_hologram.mp4")
 TMP, ESMA_IMG, LEV_IMG = sys.argv[1], sys.argv[2], sys.argv[3]
 FONTS = os.environ.get("NUGZ_FONTS", os.path.join(ROOT, "assets/fonts"))
 os.makedirs(TMP, exist_ok=True)
@@ -279,6 +282,172 @@ def scene_anim(T):
     img.alpha_composite(glow(lay, 16, 1.5))
     return img.convert("RGB")
 
+# --- Part 2 motion graphics, style "Hologram" (ref: instagram.com/reel/DgLK1eZhEkS) ---
+# Neon glass containers on a navy laser stage, terminal-style monospace readouts.
+ANIM_STYLE = os.environ.get("ANIM_STYLE", "grid")
+HOLO_STAGE = os.environ.get("HOLO_STAGE", os.path.join(ROOT, "assets/styles/hologram_stage.jpg"))
+F_MONO, F_MONO_M = "IBMPlexMono-Bold.ttf", "IBMPlexMono-Medium.ttf"
+H_BLUE, H_CYAN, H_RED, H_GREEN = (70, 160, 255), (130, 235, 255), (255, 72, 72), (80, 235, 150)
+H_PROMPT = (226, 240, 120)                       # terminal prompt yellow-green, as in the reference
+_stage = None
+_rng_p = np.random.default_rng(3)
+PARTS = [(_rng_p.uniform(0, W), _rng_p.uniform(0, H), _rng_p.uniform(2, 7), _rng_p.uniform(8, 30), _rng_p.uniform(.2, .7)) for _ in range(46)]
+def holo_stage(T):
+    global _stage
+    if _stage is None:
+        im = Image.open(HOLO_STAGE).convert("RGB"); s = max(W * 1.1 / im.width, H * 1.1 / im.height)
+        im = im.resize((int(im.width * s), int(im.height * s)), Image.LANCZOS)
+        a = np.asarray(im, np.float32) * 0.78                # keep it in the background
+        _stage = Image.fromarray(a.astype(np.uint8))
+    z = 1 + 0.06 * min(T / 20, 1)                             # slow push-in
+    sw, sh = int(W * 1.1 / z), int(H * 1.1 / z)
+    cx, cy = _stage.width / 2, _stage.height / 2
+    img = _stage.crop((int(cx - sw / 2), int(cy - sh / 2), int(cx + sw / 2), int(cy + sh / 2))).resize((W, H), Image.BILINEAR)
+    img = img.convert("RGBA"); lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    for x, y, r, v, a in PARTS:                               # drifting bokeh
+        yy = (y - v * T * 3) % H
+        d.ellipse([x - r, yy - r, x + r, yy + r], fill=(110, 170, 255, int(90 * a)))
+    img.alpha_composite(lay.filter(ImageFilter.GaussianBlur(3)))
+    return img
+
+def glass_box(lay, box, col, level=0.0, fill=None, alpha=1.0):
+    """Neon glass container: glow rim, double edge, translucent body, glossy streak, glowing liquid."""
+    x0, y0, x1, y1 = [int(v) for v in box]
+    if x1 - x0 < 8 or y1 - y0 < 8: return
+    A = lambda a: int(a * alpha)
+    body = Image.new("RGBA", (x1 - x0, y1 - y0), (0, 0, 0, 0)); bd = ImageDraw.Draw(body)
+    r = 34
+    grad = np.zeros((y1 - y0, x1 - x0, 4), np.uint8)
+    ys = np.linspace(0, 1, y1 - y0)[:, None]
+    grad[..., 0] = (8 + col[0] * 0.10 * (1 - ys)).astype(np.uint8)
+    grad[..., 1] = (14 + col[1] * 0.10 * (1 - ys)).astype(np.uint8)
+    grad[..., 2] = (30 + col[2] * 0.14 * (1 - ys)).astype(np.uint8)
+    grad[..., 3] = A(150)
+    g = Image.fromarray(grad, "RGBA"); m = Image.new("L", g.size, 0)
+    ImageDraw.Draw(m).rounded_rectangle([0, 0, g.width - 1, g.height - 1], r, fill=255)
+    body.paste(g, (0, 0), m)
+    if level > 0 and fill:                                   # liquid / energy fill
+        lh = int((y1 - y0 - 28) * min(level, 1.0))
+        if lh > 4:
+            fw_ = x1 - x0 - 28
+            gy = np.linspace(0, 1, lh)[:, None]                      # luminous gradient: bright top, deep bottom
+            gx = 1 - 0.35 * np.abs(np.linspace(-1, 1, fw_))[None, :] ** 2
+            lum = (0.55 + 0.45 * (1 - gy) ** 2) * gx
+            liq = np.zeros((lh, fw_, 4), np.uint8)
+            for c in range(3): liq[..., c] = np.clip(fill[c] * lum + 255 * 0.25 * (1 - gy) ** 6, 0, 255)
+            liq[..., 3] = A(170)
+            lm = Image.new("L", (fw_, lh), 0); ImageDraw.Draw(lm).rounded_rectangle([0, 0, fw_ - 1, lh - 1], 22, fill=255)
+            body.paste(Image.fromarray(liq, "RGBA"), (14, y1 - y0 - 14 - lh), lm)
+            bd.line([(26, y1 - y0 - 14 - lh + 3), (x1 - x0 - 26, y1 - y0 - 14 - lh + 3)], fill=(255, 255, 255, A(160)), width=3)
+    sh = Image.new("L", body.size, 0); sd = ImageDraw.Draw(sh)      # glossy diagonal streak
+    w_, h_ = body.size
+    sd.polygon([(int(w_ * .08), 0), (int(w_ * .34), 0), (int(w_ * .06), int(h_ * .55)), (0, int(h_ * .55)), (0, int(h_ * .2))], fill=A(38))
+    sd.rounded_rectangle([18, 16, w_ - 18, 30], 7, fill=A(50))
+    body.paste(Image.new("RGBA", body.size, (255, 255, 255, 255)), (0, 0), ImageChops.multiply(sh, m))
+    lay.alpha_composite(body, (x0, y0))
+    d = ImageDraw.Draw(lay)
+    d.rounded_rectangle([x0, y0, x1, y1], r, outline=col + (A(255),), width=5)
+    d.rounded_rectangle([x0 + 12, y0 + 12, x1 - 12, y1 - 12], r - 10, outline=col + (A(110),), width=2)
+
+def mono_num(d, xy, num, unit, size, col=WHITE, ucol=H_CYAN, anchor="mm", alpha=255):
+    f = font(F_MONO, size); fu = font(F_MONO, int(size * 0.8))
+    tw = d.textlength(num + " ", font=f) + d.textlength(unit, font=fu)
+    x = xy[0] - (tw / 2 if anchor == "mm" else 0 if anchor == "lm" else tw)
+    d.text((x, xy[1]), num + " ", font=f, fill=col + (alpha,), anchor="lm")
+    d.text((x + d.textlength(num + " ", font=f), xy[1]), unit, font=fu, fill=ucol + (alpha,), anchor="lm")
+
+def prompt_line(d, xy, text, size, col=WHITE, typed=1.0, cursor=False, T=0, alpha=255):
+    f = font(F_MONO, size); n = int(len(text) * min(max(typed, 0), 1)); s = text[:n]
+    d.text(xy, "›", font=f, fill=H_PROMPT + (alpha,), anchor="lm")
+    x = xy[0] + d.textlength("› ", font=f)
+    d.text((x, xy[1]), s, font=f, fill=col + (alpha,), anchor="lm")
+    if cursor and (T * 2) % 1 < 0.6:
+        cx = x + d.textlength(s, font=f) + 4
+        d.rectangle([cx, xy[1] - size * 0.42, cx + size * 0.5, xy[1] + size * 0.42], fill=H_PROMPT + (alpha,))
+
+def highlight(d, xy, text, size, bg=DA, fg=(10, 14, 30)):
+    f = font(F_MONO, size); tw = d.textlength(text, font=f)
+    d.rectangle([xy[0] - 10, xy[1] - size * 0.62, xy[0] + tw + 10, xy[1] + size * 0.62], fill=bg + (235,))
+    d.text(xy, text, font=f, fill=fg + (255,), anchor="lm")
+
+def tick_mark(d, x, y, s, col):
+    d.line([(x, y), (x + s * .35, y + s * .35), (x + s, y - s * .45)], fill=col, width=max(3, int(s / 6)), joint="curve")
+def cross_mark(d, x, y, s, col):
+    w_ = max(3, int(s / 6)); d.line([(x, y - s / 2), (x + s, y + s / 2)], fill=col, width=w_); d.line([(x, y + s / 2), (x + s, y - s / 2)], fill=col, width=w_)
+
+def scene_anim_holo(T):
+    M = anim_marks
+    img = holo_stage(T)
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
+    # header: terminal command typed out
+    prompt_line(d, (130, 330), "./exemple_concret", 46, typed=(T - 0.05) / 0.6, cursor=T < M[1], T=T)
+    # account: blue glass container with an energy fill
+    if T >= M[1]:
+        u = ease_out((T - M[1]) / 0.45); x0, y0, x1, y1 = JAR
+        bal = 500 * ease((T - M[1] - 0.2) / 0.9)
+        glass_box(lay, (x0, y1 - (y1 - y0) * u, x1, y1), H_BLUE, level=(bal / EUR_PER_PX) / (y1 - y0 - 28), fill=(40, 130, 255), alpha=u)
+        d.text(((x0 + x1) / 2, y1 + 56), "COMPTE", font=font(F_MONO_M, 38), fill=H_CYAN + (255,), anchor="mm")
+        mono_num(d, ((x0 + x1) / 2, y0 - 66), f"{int(round(bal))}", "€", 74)
+    RX0, RX1, RY0, RY1 = 560, 1000, 780, 1180
+    if M[2] <= T < M[5]:                                      # chart screen
+        fade = 1 - ease((T - (M[5] - 0.3)) / 0.3); al = int(255 * fade)
+        u0 = ease_out((T - M[2]) / 0.4)
+        glass_box(lay, (RX0 - 20, RY0 - 20, RX1 + 20, RY1 + 20), H_BLUE, alpha=fade * u0)
+        u = ease_out((T - M[2] - 0.2) / 1.3)
+        pts = [(0, .6), (.12, .52), (.22, .64), (.34, .44), (.46, .52), (.58, .36), (.7, .42), (.82, .26), (1, .3)]
+        xy = [(RX0 + 30 + px * (RX1 - RX0 - 60), RY0 + 40 + py * (RY1 - RY0 - 80)) for px, py in pts]
+        k = u * (len(xy) - 1); n = int(k); seg = xy[:n + 1]
+        if n < len(xy) - 1:
+            fr = k - n; seg.append((xy[n][0] + (xy[n + 1][0] - xy[n][0]) * fr, xy[n][1] + (xy[n + 1][1] - xy[n][1]) * fr))
+        if len(seg) > 1: d.line(seg, fill=H_CYAN + (al,), width=6, joint="curve")
+        d.text((RX0, RY0 - 70), "EUR/USD", font=font(F_MONO_M, 38), fill=H_CYAN + (al,), anchor="lm")
+        if T >= M[2] + 0.9 and al > 30: highlight(d, (RX1 - 205, RY0 - 70), "LOT 0,20", 40)
+        if T >= M[3]:
+            b = back_out((T - M[3]) / 0.35)
+            mono_num(d, ((RX0 + RX1) / 2, RY1 + 120), "20 000", "€", max(1, int(90 * b)), alpha=al)
+            d.text(((RX0 + RX1) / 2, RY1 + 200), "exposition", font=font(F_MONO_M, 36), fill=H_CYAN + (al,), anchor="mm")
+        if T >= M[4]:
+            u2 = ease_out((T - M[4]) / 0.4); ys = RY0 + 40 + 0.78 * (RY1 - RY0 - 80)
+            x = RX0 + 30 + (RX1 - RX0 - 60) * u2
+            for xx in range(RX0 + 30, int(x), 34): d.line([(xx, ys), (min(xx + 18, x), ys)], fill=H_RED + (al,), width=5)
+            if u2 > 0.6: d.text((RX1 - 20, ys + 46), "STOP −10 €", font=font(F_MONO, 38), fill=H_RED + (al,), anchor="rm")
+    in_margin = (M[6] <= T < M[7]) or T >= M[8]
+    if T >= M[5]:
+        lev = 400 if T >= M[7] else 30
+        if in_margin:
+            prompt_line(d, (560, 560), f"levier x{lev}", 44, col=DA)
+        else:                                                 # leverage panel
+            k0 = M[7] if lev == 400 else M[5]
+            b = back_out((T - k0) / 0.4); u0 = ease_out((T - k0) / 0.35)
+            glass_box(lay, (560, 760, 1000, 1240), H_BLUE, alpha=u0)
+            ang = (-8 if lev == 30 else -26) * ease_out((T - k0) / 0.6)
+            cx, cy, L = 780, 930, 170
+            ca, sa = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+            d.polygon([(cx, cy + 8), (cx - 32, cy + 64), (cx + 32, cy + 64)], outline=H_CYAN, width=5)
+            d.line([(cx - L * ca, cy - L * sa), (cx + L * ca, cy + L * sa)], fill=H_CYAN, width=7)
+            d.text((cx, 820), "LEVIER", font=font(F_MONO_M, 38), fill=H_CYAN + (255,), anchor="mm")
+            d.text((cx, 1110), f"x{lev}", font=font(F_MONO, max(1, int(120 * b))), fill=DA + (255,), anchor="mm")
+    def margin_box(T0, amount, ok):
+        u = ease_out((T - T0) / 0.7); jx0, jy0, jx1, jy1 = JAR
+        base = jy1; hpx = amount / EUR_PER_PX * u + 28
+        col = (H_GREEN if ok else H_RED) if T > T0 + 0.9 else H_BLUE
+        glass_box(lay, (640, base - hpx, 920, base), col, level=1.0, fill=tuple(int(c * .55) for c in col))
+        d.text((780, jy1 + 56), "MARGE", font=font(F_MONO_M, 38), fill=H_CYAN + (255,), anchor="mm")
+        mono_num(d, (780, base - hpx - 50), f"{int(round(amount * u))}", "€", 62, col=WHITE, ucol=col)
+        ref = jy1 - 14 - 500 / EUR_PER_PX
+        for xx in range(jx0 - 10, 960, 30): d.line([(xx, ref), (xx + 15, ref)], fill=DA + (230,), width=3)
+        if T > T0 + 0.9:
+            sc = back_out((T - T0 - 0.9) / 0.3); cc = H_GREEN if ok else H_RED
+            prompt_line(d, (200, 1490), ("50 € < 500 €" if ok else "667 € > 500 €"), 50)
+            (tick_mark if ok else cross_mark)(d, 205, 1590, 44 * max(sc, .1), cc)
+            d.text((270, 1590), "trade ouvert" if ok else "trade impossible", font=font(F_MONO, max(1, int(64 * sc))), fill=cc + (255,), anchor="lm")
+    if M[6] <= T < M[7]: margin_box(M[6], 667, False)
+    if T >= M[8]: margin_box(M[8], 50, True)
+    img.alpha_composite(glow(lay, 22, 1.25))
+    # faint scanlines for the screen/hologram feel
+    a = np.asarray(img.convert("RGB"), np.float32); a[::3] *= 0.94
+    return Image.fromarray(a.astype(np.uint8))
+
 # ------------------------------------------------------------------ captions (@planfomo style)
 words = [w for s in json.load(open(WORDS)) for w in s["words"]]
 CAPS = []   # (t_start, t_end, token, is_emphasis)
@@ -312,6 +481,12 @@ def draw_caption(img, tnow, kind):
             base = img.convert("RGBA"); base.alpha_composite(sh); return base.convert("RGB")
     return img
 
+if os.environ.get("PREVIEW_T"):                       # quick stills of the animation, no render
+    fn = scene_anim_holo if ANIM_STYLE == "hologram" else scene_anim
+    for tt in [float(x) for x in os.environ["PREVIEW_T"].split(",")]:
+        kind = next(p["kind"] for p in pieces if p["t0"] <= tt < p["t0"] + p["dur"])
+        draw_caption(fn(tt - anim_t0), tt, kind).save(os.path.join(TMP, f"preview_{tt:05.2f}.jpg"), quality=90)
+    sys.exit(0)
 # ------------------------------------------------------------------ video
 REUSE = os.environ.get("REUSE_VIDEO") == "1" and os.path.exists(os.path.join(TMP, "video.mp4"))
 enc = None if REUSE else subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
@@ -351,7 +526,9 @@ for p in pieces_to_render:
     elif kind == "esma":  gen = (scene_esma(k / FPS, p["dur"]) for k in range(p["n"]))
     elif kind == "lev":   gen = (scene_lev(k / FPS, p["dur"]) for k in range(p["n"]))
     elif kind == "marge": gen = (scene_marge(k / FPS, p["dur"]) for k in range(p["n"]))
-    else:                 gen = (scene_anim(p["t0"] - anim_t0 + k / FPS) for k in range(p["n"]))
+    else:
+        fn = scene_anim_holo if ANIM_STYLE == "hologram" else scene_anim
+        gen = (fn(p["t0"] - anim_t0 + k / FPS) for k in range(p["n"]))
     for k, fr in enumerate(gen):
         tnow = p["t0"] + k / FPS
         fr = draw_caption(fr, tnow, kind)
