@@ -1,0 +1,22 @@
+{
+  "title": "nugz arcade 3d",
+  "defaults": { "aspectRatio": "9:16", "videoModel": "kling-3.0", "imageModel": "nano-banana-pro", "tier": "high", "sound": false },
+  "steps": [
+    { "id": "k1", "type": "image", "quality": "2k",
+      "prompt": "Stylized 3D render, high-end animated-film quality, vertical 9:16. A dark navy arcade stage with glowing electric-blue laser lines converging in perspective, soft haze, floating bokeh. In the lower middle, a transparent glass display case with thick rounded glowing neon-blue edges, like an old arcade cabinet screen. Inside sits a small cute mascot: a glossy rounded blue cube shaped like a tiny retro arcade cabinet, its face is a black CRT screen with two big glowing cyan pixel eyes and a pixel smile, tiny stubby arms, a gold coin slot on the top of its head. It sits proudly on a pile of shiny gold arcade tokens. The top third of the frame is dark and empty. No text, no letters, no numbers." },
+    { "id": "k2", "type": "image", "quality": "2k", "refs": [{ "src": "@k1", "label": "scene" }],
+      "prompt": "Same style, same stage and same mascot as @scene. On the right, a floating retro arcade monitor with a thick bezel shows a glowing green line chart going up (no text). On the left, the mascot stands next to a towering column of gold arcade tokens rising high out of frame, looking up at it amazed. The top third of the frame is dark and empty. No text, no letters, no numbers." },
+    { "id": "k3", "type": "image", "quality": "2k", "refs": [{ "src": "@k1", "label": "scene" }],
+      "prompt": "Same style, same stage and same mascot as @scene. In the foreground, a chunky retro arcade joystick with a glossy red ball top, tilted only slightly. Above it, a glass coin-slot box with glowing neon-red edges. The mascot pushes its small pile of gold arcade tokens toward the coin slot, looking worried. The top third of the frame is dark and empty. No text, no letters, no numbers." },
+    { "id": "k4", "type": "image", "quality": "2k", "refs": [{ "src": "@k1", "label": "scene" }],
+      "prompt": "Same style, same stage and same mascot as @scene. In the foreground, a chunky retro arcade joystick with a glossy ball top pushed all the way forward, glowing. Above it, a glass coin-slot box with glowing neon-green edges. The mascot happily drops just three gold arcade tokens into the slot, most of its token pile still beside it. The top third of the frame is dark and empty. No text, no letters, no numbers." },
+    { "id": "s1", "type": "video", "start": "@k1", "duration": 3,
+      "prompt": "The mascot bounces happily on its pile of gold tokens and waves, the tokens sparkle, its pixel eyes blink. Slow camera push-in. Neon edges of the glass case pulse softly." },
+    { "id": "s2", "type": "video", "start": "@k2", "duration": 6,
+      "prompt": "The column of gold tokens grows rapidly upward with a satisfying stacking motion, the camera tilts up following it, the mascot's pixel eyes widen in amazement, the green chart line on the arcade monitor keeps rising." },
+    { "id": "s3", "type": "video", "start": "@k3", "duration": 6,
+      "prompt": "The mascot pushes its tokens into the coin slot, the slot box flashes bright red and spits the tokens back out, they bounce on the floor, the mascot's pixel face turns sad and it slumps. The joystick barely moves." },
+    { "id": "s4", "type": "video", "start": "@k4", "duration": 7,
+      "prompt": "The joystick is slammed fully forward, the mascot drops three tokens into the slot, the glass box lights up bright green, pixel confetti bursts, the mascot jumps and cheers with a big pixel smile. Camera does a small celebratory push-in." }
+  ]
+}

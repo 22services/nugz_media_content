@@ -36,10 +36,11 @@ below with one line each) before building the animation scenes. Everything else 
 | Style | Look | Reference | How to render |
 |---|---|---|---|
 | **Grid** | Black background with a `#f4c430` dot grid; minimalist white glowing line icons, charts and outlined containers; one idea per shot. | Silence Capital — https://vm.tiktok.com/ZN8arWp6T/ | `scripts/edit_v2.py` (default, `ANIM_STYLE=grid`). Example: `exports/v3/` |
-| **Hologram** | Navy 3D stage with blue perspective laser lines and haze; neon **glass containers** (blue, red = danger, green = OK) with glossy streaks and luminous fills; terminal-style monospace readouts (`› ./commande`, big numbers + cyan units, yellow highlight boxes); faint scanlines. | iv2fi — https://www.instagram.com/reel/DgLK1eZhEkS/ | `ANIM_STYLE=hologram scripts/edit_v2.py` — stage plate `assets/styles/hologram_stage.jpg` (HeliosGen, nano-banana-pro); font IBM Plex Mono. Example: `exports/v4_hologram/` |
+| **Arcade** | **Real 3D** (not flat drawings), like an old arcade machine: an original cute mascot (blue mini arcade cabinet, CRT face with pixel eyes, coin slot on its head) in glass display cases with thick neon edges (blue = neutral, red = refused, green = OK) on a navy stage with blue perspective laser lines and haze; gold arcade tokens as money, arcade joystick as leverage. Numbers and text are overlays in an arcade pixel font (Press Start 2P) with CRT glow and scanlines, arcade HUD on top (1UP, COMPTE…). | iv2fi — https://www.instagram.com/reel/DgLK1eZhEkS/ (made with hum.studio: Claude agents + AI-generated 3D images/video, motion-graphics overlays) | HeliosGen: one keyframe per beat with `nano-banana-pro` (later keyframes use the first as `refs` to keep the mascot), animated with `kling-3.0` (1080p, no sound). Plan template: `assets/styles/arcade/heliosgen_plan_levier.json`, mascot: `assets/styles/arcade/mascot_reference.jpg`. Then `ANIM_STYLE=arcade ARCADE_DIR=<clips> scripts/edit_v2.py`. Cost ≈ 18 credits per keyframe + ≈ 20 credits per second of Kling. Example: `exports/v4_arcade/` |
 
 To add a style: give it a short name, add a row here, and add a `scene_anim_<name>` renderer
-selected by `ANIM_STYLE` in the edit script.
+selected by `ANIM_STYLE` in the edit script. Study a reference frame by frame (1 fps) before naming it:
+"3D" in a reference means real rendered 3D, never flat 2D shapes with gradients.
 
 ## Video generation
 
